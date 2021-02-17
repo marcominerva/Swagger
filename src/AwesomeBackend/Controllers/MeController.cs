@@ -11,8 +11,6 @@ namespace AwesomeBackend.Controllers
         /// <summary>
         /// Return information about the currently logged user
         /// </summary>
-        /// <response code="200">An object containing the information about the currently logged user</response>
-        /// <response code="401">Unauthorized user</response>
         [HttpGet]
         public ActionResult<User> Get()
         {

@@ -30,16 +30,26 @@ namespace AwesomeBackend.BusinessLayer.Services
             var data = await query.Include(r => r.User)
                 .OrderByDescending(s => s.Date)
                 .Skip(pageIndex * itemsPerPage).Take(itemsPerPage + 1)      // Try to retrieve an element more than the requested number to check whether there are more data.
-                .Select(dbRating => new Rating
-                {
-                    Id = dbRating.Id,
-                    RatingScore = dbRating.Score,
-                    Comment = dbRating.Comment,
-                    Date = dbRating.Date,
-                    User = $"{dbRating.User.FirstName} {dbRating.User.LastName}".Trim()
-                }).ToListAsync();
+                .Select(dbRating => CreateRatingDto(dbRating)).ToListAsync();
 
-            return new ListResult<Rating>(data.Take(itemsPerPage), totalCount, data.Count > itemsPerPage);
+            var result = new ListResult<Rating>(data.Take(itemsPerPage), totalCount, data.Count > itemsPerPage);
+            return result;
+        }
+
+        public async Task<Rating> GetAsync(Guid restaurantId, Guid id)
+        {
+            var dbRating = await DataContext.GetData<Entities.Rating>()
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(r => r.Id == id && r.RestaurantId == restaurantId);
+
+            if (dbRating == null)
+            {
+                Logger.LogInformation("Unable to find rating with Id {Id} for Restaurant with Id {RestaurantId}", id, restaurantId);
+                return null;
+            }
+
+            var rating = CreateRatingDto(dbRating);
+            return rating;
         }
 
         public async Task<NewRating> RateAsync(Guid restaurantId, double score, string comment)
@@ -62,5 +72,15 @@ namespace AwesomeBackend.BusinessLayer.Services
             var result = new NewRating(restaurantId, Math.Round(averageScore, 2));
             return result;
         }
+
+        private static Rating CreateRatingDto(Entities.Rating dbRating)
+            => new Rating
+            {
+                Id = dbRating.Id,
+                RatingScore = dbRating.Score,
+                Comment = dbRating.Comment,
+                Date = dbRating.Date,
+                User = $"{dbRating.User.FirstName} {dbRating.User.LastName}".Trim()
+            };
     }
 }

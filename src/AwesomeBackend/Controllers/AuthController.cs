@@ -34,21 +34,18 @@ namespace AwesomeBackend.Controllers
         /// <summary>
         /// Sign-up a new user
         /// </summary>
-        /// <param name="model">The information about the registered user</param>
-        /// <response code="200">Registration completed successfully</response>
-        /// <response code="400">Unable to register the news user because of an error of input data</response>
         [HttpPost("register")]
-        public async Task<ActionResult> Register(RegisterRequest model)
+        public async Task<ActionResult> Register(RegisterRequest request)
         {
             var user = new ApplicationUser()
             {
-                UserName = model.Email,
-                Email = model.Email,
-                FirstName = model.FirstName,
-                LastName = model.LastName
+                UserName = request.Email,
+                Email = request.Email,
+                FirstName = request.FirstName,
+                LastName = request.LastName
             };
 
-            var result = await userManager.CreateAsync(user, model.Password);
+            var result = await userManager.CreateAsync(user, request.Password);
             if (result.Succeeded)
             {
                 return Ok(result);
@@ -56,7 +53,7 @@ namespace AwesomeBackend.Controllers
 
             foreach (var error in result.Errors)
             {
-                logger.LogError("Registration failed for user {UserName}", model.Email);
+                logger.LogError("Registration failed for user {UserName}", request.Email);
                 ModelState.AddModelError("error", error.Description);
             }
 
@@ -64,23 +61,24 @@ namespace AwesomeBackend.Controllers
         }
 
         /// <summary>
-        /// Perform a login
+        /// Perform a login and obtain a new JWT Bearer token
         /// </summary>
-        /// <param name="model">Login information</param>
-        /// <returns>An object containing the Authentication Bearer Token</returns>
-        /// <response code="200">Login completed successfully</response>
-        /// <response code="400">Unable to perform login because of an error of input data</response>
         [HttpPost("login")]
-        public async Task<ActionResult<AuthResponse>> Login(LoginRequest model)
+        public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
         {
-            var signInResult = await signInManager.PasswordSignInAsync(model.Email, model.Password, isPersistent: false, lockoutOnFailure: false);
+            if (request is null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            var signInResult = await signInManager.PasswordSignInAsync(request.Email, request.Password, isPersistent: false, lockoutOnFailure: false);
             if (!signInResult.Succeeded)
             {
-                logger.LogWarning("Login failed for user {UserName}", model.Email);
+                logger.LogWarning("Login failed for user {UserName}", request.Email);
                 return BadRequest();
             }
 
-            var user = await userManager.FindByNameAsync(model.Email);
+            var user = await userManager.FindByNameAsync(request.Email);
             var userClaims = await userManager.GetClaimsAsync(user);
             var userRoles = await userManager.GetRolesAsync(user);
 

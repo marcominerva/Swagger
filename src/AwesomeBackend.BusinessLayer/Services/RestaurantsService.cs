@@ -18,19 +18,6 @@ namespace AwesomeBackend.BusinessLayer.Services
         {
         }
 
-        public async Task<Restaurant> GetAsync(Guid id)
-        {
-            var dbRestaurant = await DataContext.GetData<Entities.Restaurant>().Include(r => r.Ratings).FirstOrDefaultAsync(v => v.Id == id);
-            if (dbRestaurant == null)
-            {
-                Logger.LogInformation("Unable to find restaurant with Id {RestaturantId}", id);
-                return null;
-            }
-
-            var restaurant = CreateRestaurantDto(dbRestaurant);
-            return restaurant;
-        }
-
         public async Task<ListResult<Restaurant>> GetAsync(int pageIndex, int itemsPerPage)
         {
             Logger.LogDebug("Trying to retrieve {ItemsCount} restaurants...", itemsPerPage);
@@ -47,12 +34,25 @@ namespace AwesomeBackend.BusinessLayer.Services
                 .Select(dbRestaurant => CreateRestaurantDto(dbRestaurant))
                 .ToListAsync();
 
-            return new ListResult<Restaurant>(data.Take(itemsPerPage), totalCount, data.Count > itemsPerPage);
+            var result = new ListResult<Restaurant>(data.Take(itemsPerPage), totalCount, data.Count > itemsPerPage);
+            return result;
+        }
+
+        public async Task<Restaurant> GetAsync(Guid id)
+        {
+            var dbRestaurant = await DataContext.GetData<Entities.Restaurant>().Include(r => r.Ratings).FirstOrDefaultAsync(r => r.Id == id);
+            if (dbRestaurant == null)
+            {
+                Logger.LogInformation("Unable to find restaurant with Id {RestaturantId}", id);
+                return null;
+            }
+
+            var restaurant = CreateRestaurantDto(dbRestaurant);
+            return restaurant;
         }
 
         private static Restaurant CreateRestaurantDto(Entities.Restaurant dbRestaurant)
-        {
-            return new Restaurant
+            => new Restaurant
             {
                 Id = dbRestaurant.Id,
                 Name = dbRestaurant.Name,
@@ -70,6 +70,5 @@ namespace AwesomeBackend.BusinessLayer.Services
                 RatingsCount = dbRestaurant.Ratings.Count,
                 RatingScore = Math.Round(dbRestaurant.Ratings.Select(r => r.Score).DefaultIfEmpty(0).Average(), 2)
             };
-        }
     }
 }
