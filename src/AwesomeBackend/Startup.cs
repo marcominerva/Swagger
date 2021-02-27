@@ -2,6 +2,7 @@
 using AwesomeBackend.Authentication.Models;
 using AwesomeBackend.BusinessLayer.Services;
 using AwesomeBackend.DataAccessLayer;
+using AwesomeBackend.Documentation;
 using AwesomeBackend.Models;
 using Hellang.Middleware.ProblemDetails;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -15,12 +16,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using System;
 using System.IO;
 using System.Linq;
 using System.Net.Mime;
+using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -102,7 +105,37 @@ namespace AwesomeBackend
 
             services.AddSwaggerGen(options =>
             {
+                options.OperationFilter<DefaultResponseOperationFilter>();
+                options.OperationFilter<AuthResponseOperationFilter>();
+
                 options.SwaggerDoc("v1", new OpenApiInfo { Title = "AwesomeBackend", Version = "v1" });
+
+                options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
+                {
+                    In = ParameterLocation.Header,
+                    Description = "Insert JWT token with the \"Bearer \" prefix",
+                    Name = HeaderNames.Authorization,
+                    Type = SecuritySchemeType.ApiKey
+                });
+
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = JwtBearerDefaults.AuthenticationScheme
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                options.IncludeXmlComments(xmlPath);
             });
 
             // Configure error handling according to RFC7807.

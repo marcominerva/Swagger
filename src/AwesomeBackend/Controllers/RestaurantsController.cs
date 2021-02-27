@@ -2,6 +2,7 @@ using AwesomeBackend.BusinessLayer.Services;
 using AwesomeBackend.Common.Models.Requests;
 using AwesomeBackend.Common.Models.Responses;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -34,6 +35,8 @@ namespace AwesomeBackend.Controllers
         /// Get a specific restaurant
         /// </summary>
         [HttpGet("{id:guid}")]
+        [ProducesResponseType(typeof(Restaurant), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Restaurant>> GetRestaurant(Guid id)
         {
             var restaurant = await restaurantsService.GetAsync(id);
@@ -77,6 +80,7 @@ namespace AwesomeBackend.Controllers
         /// </summary>
         [Authorize]
         [HttpPost("{id:guid}/ratings")]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<NewRating>> Rate([FromRoute(Name = "id")] Guid restaurantId, RatingRequest rating)
         {
             var result = await ratingsService.RateAsync(restaurantId, rating.Score, rating.Comment);
