@@ -20,10 +20,6 @@ namespace AwesomeBackend
                 {
                     loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration);
                 })
-                //.ConfigureLogging(logging =>
-                //{
-                //    logging.AddNotepad();
-                //})
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();

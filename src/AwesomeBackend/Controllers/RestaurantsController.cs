@@ -2,6 +2,7 @@ using AwesomeBackend.BusinessLayer.Services;
 using AwesomeBackend.Common.Models.Requests;
 using AwesomeBackend.Common.Models.Responses;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -34,6 +35,9 @@ namespace AwesomeBackend.Controllers
         /// Get a specific restaurant
         /// </summary>
         [HttpGet("{id:guid}")]
+        [ProducesResponseType(typeof(Restaurant), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesDefaultResponseType]
         public async Task<ActionResult<Restaurant>> GetRestaurant(Guid id)
         {
             var restaurant = await restaurantsService.GetAsync(id);
