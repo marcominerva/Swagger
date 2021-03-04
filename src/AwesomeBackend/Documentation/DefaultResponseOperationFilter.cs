@@ -14,7 +14,7 @@ namespace AwesomeBackend.Documentation
         }
 
         private static OpenApiResponse GetResponse(string description)
-           => new OpenApiResponse
+           => new()
            {
                Description = description,
                Content = new Dictionary<string, OpenApiMediaType>
