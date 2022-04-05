@@ -1,36 +1,31 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Net.Mime;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Collections.Generic;
-using System.Net.Mime;
 
-namespace AwesomeBackend.Documentation
+namespace AwesomeBackend.Documentation;
+
+public class DefaultResponseOperationFilter : IOperationFilter
 {
-    public class DefaultResponseOperationFilter : IOperationFilter
-    {
-        public void Apply(OpenApiOperation operation, OperationFilterContext context)
-        {
-            operation.Responses.TryAdd("default", GetResponse("Error"));
-        }
+    public void Apply(OpenApiOperation operation, OperationFilterContext context) => operation.Responses.TryAdd("default", GetResponse("Error"));
 
-        private static OpenApiResponse GetResponse(string description)
-           => new()
+    private static OpenApiResponse GetResponse(string description)
+       => new()
+       {
+           Description = description,
+           Content = new Dictionary<string, OpenApiMediaType>
            {
-               Description = description,
-               Content = new Dictionary<string, OpenApiMediaType>
+               [MediaTypeNames.Application.Json] = new OpenApiMediaType
                {
-                   [MediaTypeNames.Application.Json] = new OpenApiMediaType
+                   Schema = new OpenApiSchema
                    {
-                       Schema = new OpenApiSchema
+                       Reference = new OpenApiReference
                        {
-                           Reference = new OpenApiReference
-                           {
-                               Id = nameof(ProblemDetails),
-                               Type = ReferenceType.Schema
-                           }
+                           Id = nameof(ProblemDetails),
+                           Type = ReferenceType.Schema
                        }
                    }
                }
-           };
-    }
+           }
+       };
 }

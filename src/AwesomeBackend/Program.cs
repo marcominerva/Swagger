@@ -1,29 +1,134 @@
-﻿using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
+﻿using System.Reflection;
+using System.Text;
+using System.Text.Json.Serialization;
+using AwesomeBackend.Authentication;
+using AwesomeBackend.Authentication.Models;
+using AwesomeBackend.BusinessLayer.Services;
+using AwesomeBackend.DataAccessLayer;
+using AwesomeBackend.Documentation;
+using AwesomeBackend.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.Net.Http.Headers;
+using Microsoft.OpenApi.Models;
 using Serilog;
 
-namespace AwesomeBackend
+var builder = WebApplication.CreateBuilder(args);
+builder.Host.ConfigureAppConfiguration((context, builder) =>
 {
-    public class Program
-    {
-        public static void Main(string[] args) => CreateHostBuilder(args).Build().Run();
+    builder.AddJsonFile("appsettings.local.json", optional: true);
+})
+.UseSerilog((hostingContext, loggerConfiguration) =>
+{
+    loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration);
+});
 
-        public static IHostBuilder CreateHostBuilder(string[] args)
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
+    });
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<IApplicationDbContext, ApplicationDbContext>(options =>
+{
+    options.UseSqlServer(connectionString, providerOptions =>
+    {
+        providerOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+    });
+});
+
+builder.Services.AddDbContext<AuthenticationDbContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(setup =>
+{
+    setup.Password.RequiredLength = 6;
+    setup.User.RequireUniqueEmail = true;
+})
+.AddEntityFrameworkStores<AuthenticationDbContext>();
+
+// Get JWT token settings.
+var jwtSection = builder.Configuration.GetSection(nameof(JwtSettings));
+var jwtSettings = jwtSection.Get<JwtSettings>();
+builder.Services.Configure<JwtSettings>(jwtSection);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(configureOptions =>
+{
+    configureOptions.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidAudience = jwtSettings.Audience,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidateAudience = true,
+        ValidateIssuer = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecurityKey)),
+        RequireExpirationTime = true,
+        //ClockSkew = TimeSpan.Zero // Default is 5 minutes
+    };
+});
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.OperationFilter<DefaultResponseOperationFilter>();
+    options.OperationFilter<AuthorizationResponseOperationFilter>();
+
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "AwesomeBackend", Version = "v1" });
+
+    options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Insert JWT token with the \"Bearer \" prefix",
+        Name = HeaderNames.Authorization,
+        Type = SecuritySchemeType.ApiKey
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
         {
-            return Host.CreateDefaultBuilder(args)
-                .ConfigureAppConfiguration((context, builder) =>
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
                 {
-                    builder.AddJsonFile("appsettings.local.json", optional: true);
-                })
-                .UseSerilog((hostingContext, loggerConfiguration) =>
-                {
-                    loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration);
-                })
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                });
+                    Type = ReferenceType.SecurityScheme,
+                    Id = JwtBearerDefaults.AuthenticationScheme
+                }
+            },
+            Array.Empty<string>()
         }
-    }
+    });
+
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    options.IncludeXmlComments(xmlPath);
+});
+
+builder.Services.AddScoped<IRestaurantsService, RestaurantsService>();
+builder.Services.AddScoped<IRatingsService, RatingsService>();
+
+var app = builder.Build();
+app.UseHttpsRedirection();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+
+app.UseSerilogRequestLogging();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();

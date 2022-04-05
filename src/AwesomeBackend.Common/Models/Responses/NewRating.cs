@@ -1,17 +1,14 @@
-﻿using System;
+﻿namespace AwesomeBackend.Common.Models.Responses;
 
-namespace AwesomeBackend.Common.Models.Responses
+public class NewRating
 {
-    public class NewRating
+    public Guid RestaurantId { get; }
+
+    public double AverageScore { get; }
+
+    public NewRating(Guid restaurantId, double averageScore)
     {
-        public Guid RestaurantId { get; }
-
-        public double AverageScore { get; }
-
-        public NewRating(Guid restaurantId, double averageScore)
-        {
-            RestaurantId = restaurantId;
-            AverageScore = averageScore;
-        }
+        RestaurantId = restaurantId;
+        AverageScore = averageScore;
     }
 }

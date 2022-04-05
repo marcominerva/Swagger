@@ -3,26 +3,25 @@ using AwesomeBackend.Common.Models.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AwesomeBackend.Controllers
+namespace AwesomeBackend.Controllers;
+
+[Authorize]
+public class MeController : ControllerBase
 {
-    [Authorize]
-    public class MeController : ControllerBase
+    /// <summary>
+    /// Return information about the currently logged user
+    /// </summary>
+    [HttpGet]
+    public ActionResult<User> Get()
     {
-        /// <summary>
-        /// Return information about the currently logged user
-        /// </summary>
-        [HttpGet]
-        public ActionResult<User> Get()
+        // Get User information from claims
+        return new User
         {
-            // Get User information from claims
-            return new User
-            {
-                Id = User.GetId(),
-                UserName = User.GetUserName(),
-                FirstName = User.GetFirstName(),
-                LastName = User.GetLastName(),
-                Email = User.GetEmail()
-            };
-        }
+            Id = User.GetId(),
+            UserName = User.GetUserName(),
+            FirstName = User.GetFirstName(),
+            LastName = User.GetLastName(),
+            Email = User.GetEmail()
+        };
     }
 }

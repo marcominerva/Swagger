@@ -1,17 +1,14 @@
-﻿using System;
+﻿namespace AwesomeBackend.Common.Models.Responses;
 
-namespace AwesomeBackend.Common.Models.Responses
+public class Rating
 {
-    public class Rating
-    {
-        public Guid Id { get; set; }
+    public Guid Id { get; set; }
 
-        public double RatingScore { get; set; }
+    public double RatingScore { get; set; }
 
-        public string Comment { get; set; }
+    public string Comment { get; set; }
 
-        public DateTime Date { get; set; }
+    public DateTime Date { get; set; }
 
-        public string User { get; set; }
-    }
+    public string User { get; set; }
 }

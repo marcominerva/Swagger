@@ -1,16 +1,14 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using System;
 
-namespace AwesomeBackend.Authentication.Models
+namespace AwesomeBackend.Authentication.Models;
+
+public class ApplicationRole : IdentityRole<Guid>
 {
-    public class ApplicationRole : IdentityRole<Guid>
+    public ApplicationRole()
     {
-        public ApplicationRole()
-        {
-        }
+    }
 
-        public ApplicationRole(string roleName) : base(roleName)
-        {
-        }
+    public ApplicationRole(string roleName) : base(roleName)
+    {
     }
 }
