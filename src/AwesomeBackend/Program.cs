@@ -7,6 +7,7 @@ using AwesomeBackend.BusinessLayer.Services;
 using AwesomeBackend.DataAccessLayer;
 using AwesomeBackend.Models;
 using AwesomeBackend.Swagger;
+using Hellang.Middleware.ProblemDetails;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -135,8 +136,11 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddScoped<IRestaurantsService, RestaurantsService>();
 builder.Services.AddScoped<IRatingsService, RatingsService>();
 
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
 app.UseHttpsRedirection();
+app.UseProblemDetails();
 
 var isSwaggerEnabled = builder.Configuration.GetValue<bool>("AppSettings:EnableSwagger");
 if (isSwaggerEnabled)
