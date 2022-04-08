@@ -6,13 +6,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace AwesomeBackend.Documentation;
+namespace AwesomeBackend.Swagger;
 
-public class AuthorizationResponseOperationFilter : IOperationFilter
+public class AuthResponseOperationFilter : IOperationFilter
 {
     private readonly IAuthorizationPolicyProvider authorizationPolicyProvider;
 
-    public AuthorizationResponseOperationFilter(IAuthorizationPolicyProvider authorizationPolicyProvider)
+    public AuthResponseOperationFilter(IAuthorizationPolicyProvider authorizationPolicyProvider)
     {
         this.authorizationPolicyProvider = authorizationPolicyProvider;
     }
@@ -33,26 +33,27 @@ public class AuthorizationResponseOperationFilter : IOperationFilter
         if ((requireAuthenticatedUser || requireAuthorization) && !allowAnonymous)
         {
             operation.Responses.TryAdd(StatusCodes.Status401Unauthorized.ToString(), GetResponse(HttpStatusCode.Unauthorized.ToString()));
+            operation.Responses.TryAdd(StatusCodes.Status403Forbidden.ToString(), GetResponse(HttpStatusCode.Forbidden.ToString()));
         }
     }
 
     private static OpenApiResponse GetResponse(string description)
-       => new()
-       {
-           Description = description,
-           Content = new Dictionary<string, OpenApiMediaType>
-           {
-               [MediaTypeNames.Application.Json] = new OpenApiMediaType
-               {
-                   Schema = new OpenApiSchema
-                   {
-                       Reference = new OpenApiReference
-                       {
-                           Id = nameof(ProblemDetails),
-                           Type = ReferenceType.Schema
-                       }
-                   }
-               }
-           }
-       };
+    => new()
+    {
+        Description = description,
+        Content = new Dictionary<string, OpenApiMediaType>
+        {
+            [MediaTypeNames.Application.Json] = new()
+            {
+                Schema = new()
+                {
+                    Reference = new()
+                    {
+                        Id = nameof(ProblemDetails),
+                        Type = ReferenceType.Schema
+                    }
+                }
+            }
+        }
+    };
 }

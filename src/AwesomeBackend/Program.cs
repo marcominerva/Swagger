@@ -5,12 +5,13 @@ using AwesomeBackend.Authentication;
 using AwesomeBackend.Authentication.Models;
 using AwesomeBackend.BusinessLayer.Services;
 using AwesomeBackend.DataAccessLayer;
-using AwesomeBackend.Documentation;
 using AwesomeBackend.Models;
+using AwesomeBackend.Swagger;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Serilog;
 
@@ -75,11 +76,22 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddAuthorization(options =>
+{
+    //options.FallbackPolicy = options.DefaultPolicy;
+
+    //var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser()
+    //    .RequireClaim("Frullino")
+    //    .Build();
+
+    //options.DefaultPolicy = policy;
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.OperationFilter<DefaultResponseOperationFilter>();
-    options.OperationFilter<AuthorizationResponseOperationFilter>();
+    options.OperationFilter<AuthResponseOperationFilter>();
 
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "AwesomeBackend", Version = "v1" });
 
@@ -106,6 +118,15 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 
+    options.MapType<DateTime>(() => new OpenApiSchema
+    {
+        Type = "string",
+        Format = "date-time",
+        Example = new OpenApiString(new DateTime(2022, 04, 08, 16, 22, 0).ToString("yyyy-MM-ddTHH:mm:ssZ"))
+    });
+
+    options.UseAllOfToExtendReferenceSchemas();
+
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     options.IncludeXmlComments(xmlPath);
@@ -117,11 +138,20 @@ builder.Services.AddScoped<IRatingsService, RatingsService>();
 var app = builder.Build();
 app.UseHttpsRedirection();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+var isSwaggerEnabled = builder.Configuration.GetValue<bool>("AppSettings:EnableSwagger");
+if (isSwaggerEnabled)
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.RoutePrefix = string.Empty;
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "My Awesome API");
+    });
+}
+else
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
 }
 
 app.UseSerilogRequestLogging();

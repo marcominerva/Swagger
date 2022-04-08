@@ -12,6 +12,7 @@ public class MeController : ControllerBase
     /// Return information about the currently logged user
     /// </summary>
     [HttpGet]
+    [ProducesDefaultResponseType]
     public ActionResult<User> Get()
     {
         // Get User information from claims
