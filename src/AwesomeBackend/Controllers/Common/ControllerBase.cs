@@ -5,7 +5,7 @@ namespace AwesomeBackend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Produces(MediaTypeNames.Application.Json)]
+[Workaround.Produces(MediaTypeNames.Application.Json)]
 public class ControllerBase : Microsoft.AspNetCore.Mvc.ControllerBase
 {
 }
